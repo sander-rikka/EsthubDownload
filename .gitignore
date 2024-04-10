@@ -1,0 +1,5 @@
+.idea/*.iws
+.idea/workspace.xml
+.venv
+*.tif
+*.png
