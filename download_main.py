@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import subprocess
 import json
 import logging
 import os
@@ -125,9 +126,6 @@ class SentinelDownload:
             remote_path = download.get("link") + "/" + download.get("fileName")
             local_path = download_directory + "/" + download.get("fileName")
 
-            # print("xxxxxxxxxxxxxx")
-            #print(local_path)
-            #print(remote_path)
             try:
                 sftp.get(remote_path, local_path)
                 print("Downloading finished for {}".format(download.get("fileName")))
@@ -141,15 +139,6 @@ class SentinelDownload:
     def download_all_files(self, download_directory, downloads, server, remote_username, remote_password):
 
         self.scpFilesFromServer(server, remote_username, remote_password, download_directory, downloads, remote_username, remote_password)
-        # for download in downloads:
-        #     remote_path = download.get("link") + "/" + download.get("fileName")
-        #     local_path = download_directory + "/" + download.get("fileName")
-        #
-        #     print("xxxxxxxxxxxxxx")
-        #     print(local_path)
-        #     print(remote_path)
-        #     self.scpFileFromServer(server, remote_username, remote_password, local_path, remote_path)
-        #     print("\n Downloading finished")
 
     def convertProductsToDirectDownloadLinks(self, products_to_download):
         links = []
@@ -176,20 +165,46 @@ class SentinelDownload:
         self.download_all_files(self.download_directory, files_to_download, server, remote_user, remote_password)
 
 
-def download_products(download_directory, archive_directory, filepath):
+def access_network_drive(username, password, drive_letter, network_path):
+    # Unmount the drive if it's already mounted
+    subprocess.run(['net', 'use', f'{drive_letter}:', '/delete'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-    if not os.path.exists(download_directory):
-        print('Creating download folder:', download_directory)
-        os.mkdir(download_directory)
-    print("Started downloading script")
-    downloader = SentinelDownload(download_directory, archive_directory)
-    #downloader.run_all_downloads("ehproduction02.kemit.ee", "sander.rikka", "password")
-    downloader.run_seleceted_downloads("ehproduction02.kemit.ee", "sander.rikka", "password", ocn_parse_to_filelist(filepath))
-    print("Finished downloading script")
+    # Mount the network drive with credentials
+    subprocess.run(['net', 'use', f'{drive_letter}:', f'{network_path}', f'/user:{username}', f'{password}'],
+                   stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+    # Check if the drive is mounted successfully
+    drive_list = subprocess.run(['net', 'use'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True).stdout
+    if f'{drive_letter}:' in drive_list:
+        print(f"Successfully connected to {drive_letter}: drive.")
+    else:
+        print("Failed to connect to the network drive.")
 
 
-for file in os.listdir('./filelists'):
+if __name__ == '__main__':
 
-    filepath = rf'./filelists/{file}'
-    download_products(r"I:\lng-ocn", r"I:\ESTHUB_SAR\archive", filepath)
+    username = input("Enter your username for network drive X: ")
+    password = input("Enter your password for network drive X: ")
 
+    drive_letter = "X"  # Choose any available drive letter
+    network_path = r"\\172.17.91.26\sander"  # Replace with your network path
+
+    access_network_drive(username, password, drive_letter, network_path)
+
+    # download files to X mount
+    filepath = rf'./filelists'
+    for file in os.listdir(filepath):
+        localpath = rf'./filelists/{file}'
+
+        download_directory = r'X:\2023-ESA\data\EW'
+        archive_directory = r'X:\2023-ESA\archive'
+        if not os.path.exists(download_directory):
+            print('Creating download folder:', download_directory)
+            os.makedirs(download_directory, exist_ok=True)
+
+        print("Started downloading script")
+        downloader = SentinelDownload(download_directory, archive_directory)
+
+        downloader.run_seleceted_downloads("ehproduction02.kemit.ee", "sander.rikka", 'password',
+                                           filestolist(localpath))
+        print("Finished downloading script")

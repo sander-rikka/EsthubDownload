@@ -8,30 +8,19 @@ def filestolist(file):
 
     ## for wave stuff
     df1 = pd.read_csv(file, sep='/', skiprows=1, header=None)
-    for i in range(df1.shape[0]):
+    rows, cols = df1.shape
+
+    for i in range(rows):
         filemeta = df1.iloc[i][0]
-        filesize = np.int(filemeta.split(" ")[-4])
-        # if filesize > 120000000:  # 120 MB
-        fullpath = "/mnt/hdfs/calvalus/home/sander.rikka/s1_wave2/" + \
-            df1.iloc[i][5] + "/" + \
-            df1.iloc[i][6] + "/" + \
-            df1.iloc[i][7]
+        filesize = int(filemeta.split(" ")[-4])
+        if filesize > 0:  # 120 MB
 
-        files_to_download.append({"link": fullpath, "fileName":  df1.iloc[i][8]})
+            fullpath = r'/mnt/hdfs/'
+            for col in range(1, cols - 1):
+                fullpath += df1.iloc[i][col] + '/'
 
-    # ## for heltermaa stuff
-    # df1 = pd. read_csv(file, header=None)
-    # for i in range(df1.shape[0]):
-    #     # filemeta = df1.iloc[i][0]
-    #     # filesize = np.int(filemeta.split(" ")[-4])
-    #     # if filesize > 120000000:  # 120 MB
-    #     filepath = df1.iloc[i][0]
-    #     path, filename = os.path.split(filepath)
-    #
-    #     fullpath = "/mnt/hdfs" + path
-    #
-    #     files_to_download.append({"link": fullpath, "fileName":  filename})
-    #
+            files_to_download.append({"link": fullpath, "fileName":  df1.iloc[i][cols-1]})
+
     return files_to_download
 
 
@@ -60,7 +49,7 @@ def ocn_parse_to_filelist(file):
 
 if __name__ == '__main__':
 
-    file = 'nbp_files.txt'
+    file = r'filelists/esa_ew_files.txt'
     files_to_download = filestolist(file)
 
 
